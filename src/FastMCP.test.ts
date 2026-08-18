@@ -840,7 +840,6 @@ test("clients reads a resource", async () => {
         contents: [
           {
             mimeType: "text/plain",
-            name: "Application Logs",
             text: "Example log content",
             uri: "file:///logs/app.log",
           },
@@ -868,7 +867,6 @@ test("clients reads a resource", async () => {
     },
   });
 });
-
 test("clients reads a resource that returns multiple resources", async () => {
   await runWithTestServer({
     run: async ({ client }) => {
@@ -880,13 +878,11 @@ test("clients reads a resource that returns multiple resources", async () => {
         contents: [
           {
             mimeType: "text/plain",
-            name: "Application Logs",
             text: "a",
             uri: "file:///logs/app.log",
           },
           {
             mimeType: "text/plain",
-            name: "Application Logs",
             text: "b",
             uri: "file:///logs/app.log",
           },
@@ -1722,7 +1718,6 @@ test("clients reads a resource accessed via a resource template", async () => {
         contents: [
           {
             mimeType: "text/plain",
-            name: "Application Logs",
             text: "Example log content",
             uri: "file:///logs/app.log",
           },
@@ -2269,7 +2264,6 @@ test("provides auth to resources", async () => {
     contents: [
       {
         mimeType: "text/plain",
-        name: "Auth Resource",
         text: "User 42 with role admin loaded this resource",
         uri: "auth://resource",
       },
@@ -2362,7 +2356,6 @@ test("provides auth to resource templates", async () => {
     contents: [
       {
         mimeType: "text/plain",
-        name: "Auth Template",
         text: "Resource resource-123 accessed by user 99 with permissions: read, write",
         uri: "auth://template/resource-123",
       },
@@ -2460,13 +2453,11 @@ test("provides auth to resource templates returning arrays", async () => {
     contents: [
       {
         mimeType: "text/plain",
-        name: "Multi Doc Template",
         text: "Document 1 for reports - Team: team-alpha",
         uri: "docs://category/reports",
       },
       {
         mimeType: "text/plain",
-        name: "Multi Doc Template",
         text: "Document 2 for reports - Access Level: 3",
         uri: "docs://category/reports",
       },
