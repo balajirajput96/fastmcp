@@ -232,7 +232,9 @@ type Progress = {
 };
 
 type SerializableValue =
-  { [key: string]: SerializableValue } | Literal | SerializableValue[];
+  | { [key: string]: SerializableValue }
+  | Literal
+  | SerializableValue[];
 
 type TextContent = {
   text: string;
@@ -342,7 +344,11 @@ const ResourceLinkZodSchema = z.object({
 }) satisfies z.ZodType<ResourceLink>;
 
 type Content =
-  AudioContent | ImageContent | ResourceContent | ResourceLink | TextContent;
+  | AudioContent
+  | ImageContent
+  | ResourceContent
+  | ResourceLink
+  | TextContent;
 
 const ContentZodSchema = z.discriminatedUnion("type", [
   TextContentZodSchema,
@@ -413,8 +419,8 @@ type InputPromptArgument<T extends FastMCPSessionAuth = FastMCPSessionAuth> =
 
 type InputResourceTemplate<
   T extends FastMCPSessionAuth,
-  Arguments extends InputResourceTemplateArgument<T>[] =
-    InputResourceTemplateArgument<T>[],
+  Arguments extends
+    InputResourceTemplateArgument<T>[] = InputResourceTemplateArgument<T>[],
 > = {
   arguments: Arguments;
   description?: string;
@@ -502,8 +508,8 @@ type ResourceResult =
 
 type ResourceTemplate<
   T extends FastMCPSessionAuth,
-  Arguments extends ResourceTemplateArgument<T>[] =
-    ResourceTemplateArgument<T>[],
+  Arguments extends
+    ResourceTemplateArgument<T>[] = ResourceTemplateArgument<T>[],
 > = {
   arguments: Arguments;
   complete?: (name: string, value: string, auth?: T) => Promise<Completion>;
