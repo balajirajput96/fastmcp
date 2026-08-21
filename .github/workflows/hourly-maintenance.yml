@@ -1,0 +1,83 @@
+name: Hourly Maintenance
+
+on:
+  schedule:
+    - cron: "37 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: hourly-maintenance-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read maintenance state
+        id: state
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "[automation] Hourly maintenance state";
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+            const issue = issues.find((item) => item.title === title);
+            const previous = issue?.body?.match(/Cycle count:\s*(\d+)/);
+            core.setOutput("cycle", String((previous ? Number(previous[1]) : 0) + 1));
+            core.setOutput("issue-number", issue ? String(issue.number) : "");
+      - uses: pnpm/action-setup@v4
+        if: ${{ fromJSON(steps.state.outputs.cycle) <= 2400 }}
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        if: ${{ fromJSON(steps.state.outputs.cycle) <= 2400 }}
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install locked dependencies
+        if: ${{ fromJSON(steps.state.outputs.cycle) <= 2400 }}
+        run: pnpm install --frozen-lockfile
+      - name: Run bounded validation
+        id: validation
+        if: ${{ fromJSON(steps.state.outputs.cycle) <= 2400 }}
+        continue-on-error: true
+        run: |
+          pnpm lint
+          pnpm test
+          pnpm build
+      - name: Record maintenance state
+        if: ${{ always() }}
+        uses: actions/github-script@v7
+        env:
+          CYCLE: ${{ steps.state.outputs.cycle }}
+          ISSUE_NUMBER: ${{ steps.state.outputs.issue-number }}
+          RESULT: ${{ steps.validation.outcome || 'skipped' }}
+        with:
+          script: |
+            const title = "[automation] Hourly maintenance state";
+            const cycle = Number(process.env.CYCLE);
+            const outcome = cycle > 2400 ? "cycle-limit-reached" : process.env.RESULT;
+            const body = [
+              "Automated validation state for the bounded maintenance workflow.",
+              "",
+              `Cycle count: ${cycle}`,
+              `Validation outcome: ${outcome}`,
+              "",
+              "This workflow never merges pull requests, changes source code, or stores credentials.",
+            ].join("\n");
+            const issueNumber = Number(process.env.ISSUE_NUMBER);
+            if (issueNumber) {
+              await github.rest.issues.update({ ...context.repo, issue_number: issueNumber, body });
+            } else {
+              await github.rest.issues.create({ ...context.repo, title, body });
+            }
