@@ -7,7 +7,7 @@ import {
   CallToolRequestSchema,
   ClientCapabilities,
   CompleteRequestSchema,
-  CreateMessageRequestSchema,
+  CreateMessageRequest,
   ErrorCode,
   GetPromptRequestSchema,
   GetPromptResult,
@@ -1014,6 +1014,7 @@ export class FastMCPSession<
       this.#capabilities.prompts = {};
     }
 
+    this.#capabilities.completions = {};
     this.#capabilities.logging = {};
 
     this.#server = new Server(
@@ -1165,7 +1166,7 @@ export class FastMCPSession<
   }
 
   public async requestSampling(
-    message: z.infer<typeof CreateMessageRequestSchema>["params"],
+    message: CreateMessageRequest["params"],
     options?: RequestOptions,
   ): Promise<SamplingResponse> {
     return this.#server.createMessage(message, options);
@@ -1305,10 +1306,10 @@ export class FastMCPSession<
 
   private setupCompleteHandlers() {
     this.#server.setRequestHandler(CompleteRequestSchema, async (request) => {
-      if (request.params.ref.type === "ref/prompt") {
-        const prompt = this.#prompts.find(
-          (prompt) => prompt.name === request.params.ref.name,
-        );
+      const { ref } = request.params;
+
+      if (ref.type === "ref/prompt") {
+        const prompt = this.#prompts.find((prompt) => prompt.name === ref.name);
 
         if (!prompt) {
           throw new UnexpectedStateError("Unknown prompt", {
@@ -1335,9 +1336,9 @@ export class FastMCPSession<
         };
       }
 
-      if (request.params.ref.type === "ref/resource") {
+      if (ref.type === "ref/resource") {
         const resource = this.#resourceTemplates.find(
-          (resource) => resource.uriTemplate === request.params.ref.uri,
+          (resource) => resource.uriTemplate === ref.uri,
         );
 
         if (!resource) {
@@ -1509,7 +1510,6 @@ export class FastMCPSession<
                   ...resource,
                   description: resourceTemplate.description,
                   mimeType: resource.mimeType ?? resourceTemplate.mimeType,
-                  name: resourceTemplate.name,
                   uri: resource.uri ?? uri,
                 })),
               };
@@ -1551,7 +1551,6 @@ export class FastMCPSession<
             contents: resourceResults.map((result) => ({
               ...result,
               mimeType: result.mimeType ?? resource.mimeType,
-              name: resource.name,
               uri: result.uri ?? resource.uri,
             })),
           };
